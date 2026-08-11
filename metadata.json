@@ -1,0 +1,6 @@
+{
+  "name": "The Watcher Lounge",
+  "description": "Comunidad interactiva y lounge del Multiverso para fans de Marvel, teorías del MCU, bot de lore El Observador y cronología interactiva.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
