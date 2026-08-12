@@ -28,12 +28,40 @@ export interface DbProfile {
   created_at?: string;
 }
 
+export function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+export function ensureUUID(idString: string): string {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(idString)) {
+    return idString;
+  }
+  let hex = '';
+  for (let i = 0; i < idString.length; i++) {
+    hex += idString.charCodeAt(i).toString(16);
+  }
+  while (hex.length < 32) {
+    hex += '0123456789abcdef'[Math.floor(Math.random() * 16)];
+  }
+  hex = hex.substring(0, 32);
+  return `${hex.substring(0, 8)}-${hex.substring(8, 12)}-4${hex.substring(13, 16)}-a${hex.substring(17, 20)}-${hex.substring(20, 32)}`;
+}
+
 export async function fetchProfileFromSupabase(userId: string): Promise<DbProfile | null> {
   try {
+    const validId = ensureUUID(userId);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', validId)
       .maybeSingle();
 
     if (error) {
@@ -49,13 +77,47 @@ export async function fetchProfileFromSupabase(userId: string): Promise<DbProfil
 
 export async function saveProfileToSupabase(profile: Partial<DbProfile> & { id: string }) {
   try {
-    const { data, error } = await supabase
+    const validId = ensureUUID(profile.id);
+
+    const fullPayload: any = {
+      id: validId,
+      username: profile.username || 'Usuario',
+      agent_handle: profile.agent_handle || `@${(profile.username || 'user').toLowerCase()}`,
+      avatar_url: profile.avatar_url || ''
+    };
+
+    if (profile.nexus_points !== undefined) fullPayload.nexus_points = profile.nexus_points;
+    if (profile.rank !== undefined) fullPayload.rank = profile.rank;
+    if (profile.favorite_character !== undefined) fullPayload.favorite_character = profile.favorite_character;
+    if (profile.favorite_phase !== undefined) fullPayload.favorite_phase = profile.favorite_phase;
+    if (profile.bookmarks !== undefined) fullPayload.bookmarks = profile.bookmarks;
+
+    let { data, error } = await supabase
       .from('profiles')
-      .upsert(profile, { onConflict: 'id' });
+      .upsert(fullPayload, { onConflict: 'id' });
 
     if (error) {
-      console.warn('Supabase save profile notice:', error.message);
+      console.warn('Full payload save notice, retrying with core columns:', error.message);
+      const corePayload = {
+        id: validId,
+        username: profile.username || 'Usuario',
+        agent_handle: profile.agent_handle || `@${(profile.username || 'user').toLowerCase()}`,
+        avatar_url: profile.avatar_url || ''
+      };
+      const res = await supabase
+        .from('profiles')
+        .upsert(corePayload, { onConflict: 'id' });
+
+      data = res.data;
+      error = res.error;
     }
+
+    if (error) {
+      console.error('Supabase saveProfileToSupabase error:', error.message);
+    } else {
+      console.log('Saved profile to Supabase successfully:', validId);
+    }
+
     return { data, error };
   } catch (err) {
     console.error('Error in saveProfileToSupabase:', err);

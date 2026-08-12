@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Shield, Zap, Lock, UserCheck, AlertCircle, Upload, Image, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { supabase, isSupabaseConfigured, saveProfileToSupabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, saveProfileToSupabase, generateUUID } from '../lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -119,7 +119,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         }
 
         // 3. Create account (direct profile creation to avoid Supabase auth email rate limits)
-        const newUserId = `usr-${Date.now()}`;
+        const newUserId = generateUUID();
         const newProfile = {
           id: newUserId,
           username: trimmedUsername,

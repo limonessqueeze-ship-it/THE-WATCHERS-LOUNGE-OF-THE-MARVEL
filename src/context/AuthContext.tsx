@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, FanRank, MCUPhase } from '../types';
-import { supabase, isSupabaseConfigured, fetchProfileFromSupabase, saveProfileToSupabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, fetchProfileFromSupabase, saveProfileToSupabase, ensureUUID } from '../lib/supabase';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -43,6 +43,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (user) {
       localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(user));
+      if (!user.isGuest && isSupabaseConfigured) {
+        const validId = ensureUUID(user.id);
+        saveProfileToSupabase({
+          id: validId,
+          username: user.username,
+          agent_handle: user.agentHandle,
+          avatar_url: user.avatarUrl,
+          nexus_points: user.nexusPoints,
+          rank: user.rank,
+          favorite_character: user.favoriteCharacter,
+          favorite_phase: user.favoritePhase,
+          bookmarks: user.bookmarks
+        });
+      }
     } else {
       localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
     }
