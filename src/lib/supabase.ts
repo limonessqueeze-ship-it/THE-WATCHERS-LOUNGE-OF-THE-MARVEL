@@ -65,12 +65,12 @@ export async function fetchProfileFromSupabase(userId: string): Promise<DbProfil
       .maybeSingle();
 
     if (error) {
-      console.warn('Supabase fetch profile notice:', error.message);
+      console.debug('Supabase fetch profile notice:', error.message);
       return null;
     }
     return data as DbProfile | null;
   } catch (err) {
-    console.error('Error in fetchProfileFromSupabase:', err);
+    console.debug('Error in fetchProfileFromSupabase:', err);
     return null;
   }
 }
@@ -92,35 +92,19 @@ export async function saveProfileToSupabase(profile: Partial<DbProfile> & { id: 
     if (profile.favorite_phase !== undefined) fullPayload.favorite_phase = profile.favorite_phase;
     if (profile.bookmarks !== undefined) fullPayload.bookmarks = profile.bookmarks;
 
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .upsert(fullPayload, { onConflict: 'id' });
 
     if (error) {
-      console.warn('Full payload save notice, retrying with core columns:', error.message);
-      const corePayload = {
-        id: validId,
-        username: profile.username || 'Usuario',
-        agent_handle: profile.agent_handle || `@${(profile.username || 'user').toLowerCase()}`,
-        avatar_url: profile.avatar_url || ''
-      };
-      const res = await supabase
-        .from('profiles')
-        .upsert(corePayload, { onConflict: 'id' });
-
-      data = res.data;
-      error = res.error;
-    }
-
-    if (error) {
-      console.error('Supabase saveProfileToSupabase error:', error.message);
+      console.debug('Supabase save profile notice (expected for local accounts without auth.users entry):', error.message);
     } else {
       console.log('Saved profile to Supabase successfully:', validId);
     }
 
     return { data, error };
   } catch (err) {
-    console.error('Error in saveProfileToSupabase:', err);
+    console.debug('Error in saveProfileToSupabase:', err);
     return { data: null, error: err };
   }
 }

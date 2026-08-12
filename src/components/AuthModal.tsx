@@ -118,8 +118,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           }
         }
 
-        // 3. Create account (direct profile creation to avoid Supabase auth email rate limits)
-        const newUserId = generateUUID();
+        // 3. Create account with Supabase Auth or Local Account fallback
+        let supabaseUserId: string | null = null;
+        if (isSupabaseConfigured) {
+          try {
+            const safePrefix = trimmedUsername.toLowerCase().replace(/[^a-z0-9]/g, '') || 'agent';
+            const internalEmail = `${safePrefix}_${Date.now().toString().slice(-4)}@mcu.local`;
+            const { data: authData, error: authErr } = await supabase.auth.signUp({
+              email: internalEmail,
+              password: password,
+              options: {
+                data: {
+                  full_name: trimmedUsername,
+                  avatar_url: finalAvatar,
+                  agent_handle: finalHandle
+                }
+              }
+            });
+
+            if (!authErr && authData?.user?.id) {
+              supabaseUserId = authData.user.id;
+            }
+          } catch (e) {
+            console.debug('Supabase Auth signUp fallback to local account:', e);
+          }
+        }
+
+        const newUserId = supabaseUserId || generateUUID();
         const newProfile = {
           id: newUserId,
           username: trimmedUsername,
