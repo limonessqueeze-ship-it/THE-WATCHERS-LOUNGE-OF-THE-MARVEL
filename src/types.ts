@@ -17,6 +17,7 @@ export interface UserProfile {
   bookmarks: string[]; // Theory IDs
   likedTheories: Record<string, 'up' | 'down'>;
   isGuest?: boolean;
+  hasSupabaseAuth?: boolean;
   createdAt: string;
 }
 
