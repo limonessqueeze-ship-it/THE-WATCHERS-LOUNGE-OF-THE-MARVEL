@@ -6,6 +6,7 @@ interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   loginAsGuest: () => void;
+  loginUser: (userProfile: UserProfile) => void;
   logout: () => Promise<void>;
   updateNexusPoints: (pointsToAdd: number) => void;
   toggleBookmark: (theoryId: string) => void;
@@ -142,6 +143,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newProfile;
   }
 
+  const loginUser = (userProfile: UserProfile) => {
+    setUser(userProfile);
+    localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(userProfile));
+  };
+
   const loginAsGuest = () => {
     const randomId = Math.floor(100 + Math.random() * 900);
     const guestUser: UserProfile = {
@@ -245,6 +251,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         loading,
         loginAsGuest,
+        loginUser,
         logout,
         updateNexusPoints,
         toggleBookmark,

@@ -19,7 +19,7 @@ interface LocalAccount {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const { loginAsGuest, calculateRank } = useAuth();
+  const { loginAsGuest, loginUser, calculateRank } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -63,13 +63,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  // Helper to generate internal email from username
-  const getInternalEmail = (rawUsername: string) => {
-    const clean = rawUsername.toLowerCase().trim().replace(/[^a-z0-9_]/g, '');
-    const safePrefix = clean || 'user_' + Date.now();
-    return `${safePrefix}@mcu.local`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -91,7 +84,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop';
     const finalAvatar = avatarDataUrl || defaultAvatar;
     const finalHandle = `@${trimmedUsername.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-    const internalEmail = getInternalEmail(trimmedUsername);
 
     try {
       if (isSignUp) {
@@ -122,86 +114,131 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               return;
             }
           } catch (err) {
-            console.warn('Check existing username error notice:', err);
-          }
-
-          // 3. Register user with internal email in Supabase
-          const { data, error } = await supabase.auth.signUp({
-            email: internalEmail,
-            password,
-            options: {
-              data: {
-                full_name: trimmedUsername,
-                avatar_url: finalAvatar,
-                agent_handle: finalHandle
-              }
-            }
-          });
-
-          if (error) {
-            if (error.message.includes('already registered') || error.message.includes('User already registered')) {
-              throw new Error(`El nombre de usuario "${trimmedUsername}" ya está registrado.`);
-            }
-            throw error;
-          }
-
-          if (data.user) {
-            await saveProfileToSupabase({
-              id: data.user.id,
-              username: trimmedUsername,
-              agent_handle: finalHandle,
-              avatar_url: finalAvatar,
-              nexus_points: 500,
-              rank: calculateRank(500),
-              favorite_character: 'Loki',
-              favorite_phase: 'Fase 4',
-              bookmarks: []
-            });
+            console.warn('Check existing username notice:', err);
           }
         }
 
-        // Store account locally as well
+        // 3. Create account (direct profile creation to avoid Supabase auth email rate limits)
+        const newUserId = `usr-${Date.now()}`;
+        const newProfile = {
+          id: newUserId,
+          username: trimmedUsername,
+          agentHandle: finalHandle,
+          email: `${trimmedUsername.toLowerCase()}@mcu.local`,
+          avatarUrl: finalAvatar,
+          nexusPoints: 500,
+          rank: calculateRank(500),
+          favoriteCharacter: 'Loki',
+          favoritePhase: 'Fase 4' as const,
+          bookmarks: [],
+          likedTheories: {},
+          isGuest: false,
+          createdAt: new Date().toISOString()
+        };
+
+        // Save local account cache
         saveLocalAccount({
-          id: `usr-${Date.now()}`,
+          id: newUserId,
           username: trimmedUsername,
           passwordHash: password,
           avatarUrl: finalAvatar,
           agentHandle: finalHandle
         });
 
+        // Save to Supabase DB if configured
+        if (isSupabaseConfigured) {
+          await saveProfileToSupabase({
+            id: newUserId,
+            username: trimmedUsername,
+            agent_handle: finalHandle,
+            avatar_url: finalAvatar,
+            nexus_points: 500,
+            rank: calculateRank(500),
+            favorite_character: 'Loki',
+            favorite_phase: 'Fase 4',
+            bookmarks: []
+          });
+        }
+
+        // Log user in directly
+        loginUser(newProfile);
         onClose();
       } else {
         // LOGIN logic
-        if (isSupabaseConfigured) {
-          const { error } = await supabase.auth.signInWithPassword({
-            email: internalEmail,
-            password
-          });
+        const localAccs = getLocalAccounts();
+        const matchedLocal = localAccs.find(
+          a => a.username.toLowerCase() === trimmedUsername.toLowerCase()
+        );
 
-          if (error) {
-            // Check local account fallback if supabase user wasn't found or error
-            const localAccs = getLocalAccounts();
-            const matched = localAccs.find(
-              a => a.username.toLowerCase() === trimmedUsername.toLowerCase() && a.passwordHash === password
-            );
-
-            if (!matched) {
-              throw new Error('Usuario o contraseña incorrectos.');
-            }
+        if (matchedLocal) {
+          if (matchedLocal.passwordHash !== password) {
+            setErrorMessage('Contraseña incorrecta.');
+            setLoading(false);
+            return;
           }
-        } else {
-          // Local storage authentication
-          const localAccs = getLocalAccounts();
-          const matched = localAccs.find(
-            a => a.username.toLowerCase() === trimmedUsername.toLowerCase() && a.passwordHash === password
-          );
 
-          if (!matched) {
-            throw new Error('Usuario o contraseña incorrectos.');
+          const userProfile = {
+            id: matchedLocal.id,
+            username: matchedLocal.username,
+            agentHandle: matchedLocal.agentHandle,
+            email: `${matchedLocal.username.toLowerCase()}@mcu.local`,
+            avatarUrl: matchedLocal.avatarUrl,
+            nexusPoints: 500,
+            rank: calculateRank(500),
+            favoriteCharacter: 'Loki',
+            favoritePhase: 'Fase 4' as const,
+            bookmarks: [],
+            likedTheories: {},
+            isGuest: false,
+            createdAt: new Date().toISOString()
+          };
+
+          loginUser(userProfile);
+          onClose();
+          return;
+        }
+
+        // If not matched locally, check Supabase DB
+        if (isSupabaseConfigured) {
+          const { data: dbProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .ilike('username', trimmedUsername)
+            .maybeSingle();
+
+          if (dbProfile) {
+            const userProfile = {
+              id: dbProfile.id,
+              username: dbProfile.username,
+              agentHandle: dbProfile.agent_handle || `@${dbProfile.username.toLowerCase()}`,
+              email: `${dbProfile.username.toLowerCase()}@mcu.local`,
+              avatarUrl: dbProfile.avatar_url || defaultAvatar,
+              nexusPoints: dbProfile.nexus_points ?? 500,
+              rank: calculateRank(dbProfile.nexus_points ?? 500),
+              favoriteCharacter: dbProfile.favorite_character || 'Loki',
+              favoritePhase: (dbProfile.favorite_phase as any) || 'Fase 4',
+              bookmarks: dbProfile.bookmarks || [],
+              likedTheories: {},
+              isGuest: false,
+              createdAt: dbProfile.created_at || new Date().toISOString()
+            };
+
+            // Save to local cache
+            saveLocalAccount({
+              id: dbProfile.id,
+              username: dbProfile.username,
+              passwordHash: password,
+              avatarUrl: dbProfile.avatar_url || defaultAvatar,
+              agentHandle: userProfile.agentHandle
+            });
+
+            loginUser(userProfile);
+            onClose();
+            return;
           }
         }
 
-        onClose();
+        setErrorMessage('Usuario o contraseña incorrectos.');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Error al autenticar');
