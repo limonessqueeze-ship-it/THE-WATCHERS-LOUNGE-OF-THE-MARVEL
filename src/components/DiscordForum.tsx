@@ -13,7 +13,8 @@ import {
   X,
   ChevronRight,
   Upload,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Laugh
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -49,7 +50,7 @@ export const DiscordForum: React.FC<DiscordForumProps> = ({ searchQuery = '' }) 
   const { user } = useAuth();
   const { t } = useLanguage();
 
-  const [activeChannel, setActiveChannel] = useState<'general' | 'fan-arts' | 'teorias'>('general');
+  const [activeChannel, setActiveChannel] = useState<'general' | 'fan-arts' | 'teorias' | 'memes'>('general');
   const [inputText, setInputText] = useState('');
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [showImageField, setShowImageField] = useState(false);
@@ -84,6 +85,7 @@ export const DiscordForum: React.FC<DiscordForumProps> = ({ searchQuery = '' }) 
 
   const channels = [
     { id: 'general', name: t('forum.ch_general'), icon: MessageSquare, label: t('forum.ch_general_label'), desc: t('forum.ch_general_desc') },
+    { id: 'memes', name: t('forum.ch_memes'), icon: Laugh, label: t('forum.ch_memes_label'), desc: t('forum.ch_memes_desc') },
     { id: 'fan-arts', name: 'fan-arts', icon: Palette, label: t('forum.ch_fanarts_label'), desc: t('forum.ch_fanarts_desc') },
     { id: 'teorias', name: 'teorias', icon: Lightbulb, label: t('forum.ch_theories_label'), desc: t('forum.ch_theories_desc') }
   ];
@@ -129,14 +131,43 @@ export const DiscordForum: React.FC<DiscordForumProps> = ({ searchQuery = '' }) 
 
   // Load / Store Messages per channel in LocalStorage
   const [channelMessages, setChannelMessages] = useState<Record<string, ForumMessage[]>>(() => {
+    const defaultMemes = [
+      {
+        id: 'meme-1',
+        channel: 'memes',
+        authorName: 'Deadpool_616',
+        authorHandle: '@deadpool',
+        content: 'Cuando la TVA intenta explicarme las reglas del sagrado flujo temporal por 10ª vez 🤣',
+        imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800&auto=format&fit=crop',
+        timestamp: 'Hace 1 hora',
+        reactions: { '🔥': 15, '🚀': 8, '❤️': 20 }
+      },
+      {
+        id: 'meme-2',
+        channel: 'memes',
+        authorName: 'SpiderFan_NYC',
+        authorHandle: '@spidey',
+        content: 'Peter Parker tratando de explicarle a Doctor Strange por qué arruinó el hechizo 🕷️🤣',
+        timestamp: 'Hace 30 min',
+        reactions: { '🧠': 10, '👍': 12 }
+      }
+    ];
+
     try {
       const saved = localStorage.getItem('mcu_discord_forum_messages_v2');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed['memes'] || parsed['memes'].length === 0) {
+          parsed['memes'] = defaultMemes;
+        }
+        return parsed;
+      }
     } catch (e) {
       console.warn('Could not load forum messages from storage', e);
     }
     return {
       'general': [],
+      'memes': defaultMemes,
       'fan-arts': [],
       'teorias': []
     };
@@ -222,7 +253,7 @@ export const DiscordForum: React.FC<DiscordForumProps> = ({ searchQuery = '' }) 
   const onlineMembers = registeredMembers.filter(m => m.isOnline || (user && m.id === user.id));
   const offlineMembers = registeredMembers.filter(m => !m.isOnline && (!user || m.id !== user.id));
 
-  const selectChannelMobile = (channelId: 'general' | 'fan-arts' | 'teorias') => {
+  const selectChannelMobile = (channelId: 'general' | 'fan-arts' | 'teorias' | 'memes') => {
     setActiveChannel(channelId);
     setShowChannelsMobile(false);
   };
@@ -281,6 +312,11 @@ export const DiscordForum: React.FC<DiscordForumProps> = ({ searchQuery = '' }) 
                           {ch.label}
                         </span>
                       </div>
+                      {ch.id === 'memes' && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono font-bold">
+                          MEMES
+                        </span>
+                      )}
                       {ch.id === 'fan-arts' && (
                         <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono font-bold">
                           ARTS
