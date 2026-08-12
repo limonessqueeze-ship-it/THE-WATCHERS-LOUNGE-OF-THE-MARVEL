@@ -65,9 +65,11 @@ export const TheoryModal: React.FC<TheoryModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+              className="px-3 py-1.5 rounded-xl bg-red-950/90 border border-red-600 text-red-200 hover:text-white hover:bg-red-800 transition-colors flex items-center gap-1.5 text-xs font-mono font-bold shadow-md"
+              title="Cerrar Teoría"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 text-red-400" />
+              <span>Cerrar</span>
             </button>
           </div>
         </div>
@@ -250,6 +252,17 @@ export const TheoryModal: React.FC<TheoryModalProps> = ({
                   Aún no hay comentarios en esta variante temporal. ¡Sé el primero en aportar!
                 </p>
               )}
+            </div>
+
+            {/* Bottom Close Button */}
+            <div className="pt-4 border-t border-slate-800/80 flex justify-end">
+              <button
+                onClick={onClose}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-red-950 hover:bg-red-900 border border-red-700 text-white font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg"
+              >
+                <X className="w-4 h-4 text-red-400" />
+                <span>✕ Cerrar Teoría</span>
+              </button>
             </div>
 
           </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Filter, Star, Tv, BookOpen, X, ChevronRight } from 'lucide-react';
 import { FavoriteComments } from './FavoriteComments';
+import { ItemComments } from './ItemComments';
 
 export interface SeriesItem {
   id: string;
@@ -329,16 +330,20 @@ export const SeriesCatalog: React.FC<SeriesCatalogProps> = ({ searchQuery }) => 
 
       {/* Series Details Modal */}
       {selectedSeries && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl rounded-3xl bg-[#0e0507] border border-[#DC2626]/50 p-6 sm:p-8 relative shadow-2xl space-y-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-3xl bg-[#0e0507] border border-[#DC2626]/50 p-5 sm:p-8 relative shadow-2xl space-y-6 animate-fade-in max-h-[90vh] overflow-y-auto my-auto">
+            
+            {/* Top Close Button (Highly visible on Mobile) */}
             <button
               onClick={() => setSelectedSeries(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-[#1e0709] border border-red-800 text-slate-300 hover:text-white transition-colors"
+              className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-red-950/95 border border-red-600 text-red-200 hover:text-white hover:bg-red-800 transition-colors flex items-center gap-1.5 z-30 font-mono text-xs font-bold shadow-lg"
+              title="Cerrar Ficha"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 text-red-400" />
+              <span>Cerrar</span>
             </button>
 
-            <div className="flex flex-col sm:flex-row gap-6 items-start">
+            <div className="flex flex-col sm:flex-row gap-6 items-start pt-2 sm:pt-0">
               <div className="w-full sm:w-48 aspect-[2/3] rounded-2xl overflow-hidden bg-slate-950 border border-red-900/60 flex-shrink-0 shadow-xl">
                 <img
                   src={selectedSeries.posterUrl}
@@ -350,8 +355,8 @@ export const SeriesCatalog: React.FC<SeriesCatalogProps> = ({ searchQuery }) => 
                 />
               </div>
 
-              <div className="space-y-4 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
+              <div className="space-y-4 flex-1 w-full">
+                <div className="flex flex-wrap items-center gap-2 pr-16 sm:pr-0">
                   <span className="px-3 py-1 rounded-full bg-red-950 border border-red-700/80 text-red-400 text-xs font-mono font-bold uppercase tracking-wider">
                     {selectedSeries.phase}
                   </span>
@@ -363,7 +368,7 @@ export const SeriesCatalog: React.FC<SeriesCatalogProps> = ({ searchQuery }) => 
                   </span>
                 </div>
 
-                <h2 className="font-cinzel text-2xl font-black text-white leading-tight">
+                <h2 className="font-cinzel text-xl sm:text-2xl font-black text-white leading-tight">
                   {selectedSeries.title}
                 </h2>
 
@@ -373,12 +378,26 @@ export const SeriesCatalog: React.FC<SeriesCatalogProps> = ({ searchQuery }) => 
                 </div>
 
                 <div className="space-y-1.5 pt-2">
-                  <span className="text-[11px] font-mono text-amber-400 font-bold uppercase tracking-wider block flex items-center gap-1.5">
+                  <span className="text-[11px] font-mono text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                     <BookOpen className="w-3.5 h-3.5" /> RESUMEN OFICIAL MCU:
                   </span>
                   <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-[#070203] p-4 rounded-2xl border border-[#2d0a0a]">
                     {selectedSeries.summary}
                   </p>
+                </div>
+
+                {/* Series Comments Section */}
+                <ItemComments itemTitle={selectedSeries.title} itemType="series" />
+
+                {/* Bottom Close Action Button */}
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={() => setSelectedSeries(null)}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-950 to-red-900 hover:from-red-900 hover:to-red-800 border border-red-600 text-white font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg"
+                  >
+                    <X className="w-4 h-4 text-red-400" />
+                    <span>✕ Cerrar Resumen</span>
+                  </button>
                 </div>
               </div>
             </div>

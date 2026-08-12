@@ -1,8 +1,9 @@
 import React from 'react';
-import { Tv, Film, Lightbulb, Dices, Trophy, Search, User, LogOut, Coins } from 'lucide-react';
+import { Tv, Film, Lightbulb, Dices, Trophy, Search, User, LogOut, Coins, MessageSquare, Globe } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
-export type TabType = 'series' | 'movies' | 'theories' | 'casino' | 'ranking';
+export type TabType = 'series' | 'movies' | 'theories' | 'casino' | 'ranking' | 'forum';
 
 interface NavbarProps {
   activeTab: TabType;
@@ -22,13 +23,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   userBalance = 475
 }) => {
   const { user, logout } = useAuth();
+  const { language, toggleLanguage, t } = useLanguage();
 
   const navItems = [
-    { id: 'series' as TabType, label: 'Series', icon: Tv },
-    { id: 'movies' as TabType, label: 'Películas', icon: Film },
-    { id: 'theories' as TabType, label: 'Teorías & Votación', icon: Lightbulb },
-    { id: 'casino' as TabType, label: 'Casino', icon: Dices },
-    { id: 'ranking' as TabType, label: 'Ranking', icon: Trophy },
+    { id: 'series' as TabType, label: t('nav.series'), icon: Tv },
+    { id: 'movies' as TabType, label: t('nav.movies'), icon: Film },
+    { id: 'theories' as TabType, label: t('nav.theories'), icon: Lightbulb },
+    { id: 'forum' as TabType, label: t('nav.forum'), icon: MessageSquare },
+    { id: 'casino' as TabType, label: t('nav.casino'), icon: Dices },
+    { id: 'ranking' as TabType, label: t('nav.ranking'), icon: Trophy },
   ];
 
   return (
@@ -79,17 +82,27 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Right Action Bar (Search & User / Acceder) */}
-          <div className="flex items-center gap-3">
+          {/* Right Action Bar (Language, Search & User / Acceder) */}
+          <div className="flex items-center gap-2.5">
             
+            {/* Language Switcher Button */}
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#16080a] border border-[#D4AF37]/50 text-amber-300 font-mono text-xs font-bold hover:bg-amber-950/40 transition-colors shadow-sm"
+              title="Cambiar Idioma / Change Language"
+            >
+              <Globe className="w-3.5 h-3.5 text-amber-400" />
+              <span>{language.toUpperCase()}</span>
+            </button>
+
             {/* Search Input */}
-            <div className="relative hidden xl:block w-48">
+            <div className="relative hidden xl:block w-40">
               <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar..."
+                placeholder={t('nav.search_placeholder')}
                 className="w-full pl-8 pr-3 py-1.5 rounded-full bg-[#120708] border border-[#381010] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#DC2626] transition-colors"
               />
             </div>

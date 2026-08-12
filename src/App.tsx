@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { Navbar, TabType } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
 import { SeriesCatalog } from './components/SeriesCatalog';
@@ -9,7 +10,8 @@ import { CasinoSlots } from './components/CasinoSlots';
 import { RankingBoard } from './components/RankingBoard';
 import { LoreChatbot } from './components/LoreChatbot';
 import { TheoryAnalyzer } from './components/TheoryAnalyzer';
-import { Bot, Sparkles } from 'lucide-react';
+import { DiscordForum } from './components/DiscordForum';
+import { Bot, Sparkles, X } from 'lucide-react';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -51,8 +53,15 @@ function AppContent() {
 
       {/* Lore Chatbot Modal */}
       {isLoreChatbotOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0d0607] border border-[#DC2626]/40 p-2 sm:p-4 relative shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0d0607] border border-[#DC2626]/40 p-2 sm:p-4 relative shadow-2xl my-auto">
+            <button
+              onClick={() => setIsLoreChatbotOpen(false)}
+              className="absolute top-4 right-4 z-30 px-3 py-1.5 rounded-full bg-red-950 border border-red-600 text-white font-mono text-xs font-bold hover:bg-red-800 transition-colors shadow-lg flex items-center gap-1"
+            >
+              <X className="w-4 h-4 text-red-400" />
+              <span>Cerrar</span>
+            </button>
             <LoreChatbot onClose={() => setIsLoreChatbotOpen(false)} />
           </div>
         </div>
@@ -103,6 +112,10 @@ function AppContent() {
           />
         )}
 
+        {activeTab === 'forum' && (
+          <DiscordForum searchQuery={searchQuery} />
+        )}
+
         {activeTab === 'casino' && (
           <CasinoSlots
             userBalance={userBalance}
@@ -146,8 +159,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
